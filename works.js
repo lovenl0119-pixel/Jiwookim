@@ -1,10 +1,10 @@
 /*
  * 작품 데이터 — 여기만 수정하면 사이트 전체에 반영됩니다.
  *
- * type     : 카테고리 — "video" | "image" | "aesthetic"
+ * type     : 카테고리 — "video" | "image" | "aesthetic" | "design"
  *            (상세 화면 형태는 카테고리와 별개로 폴더 위치로 정해짐:
  *             ai work/Video/<작품명> = 영상 폼,
- *             ai work/Image/<작품명>, ai work/Aesthetic/<작품명> = 이미지 폼)
+ *             ai work/Image · Aesthetic · Design/<작품명> = 이미지 폼)
  * thumb    : 목록/그리드용 작은 이미지 (가로 600px 정도 권장)
  * src      : 상세 화면용 큰 이미지
  * video    : (선택) type이 video일 때 재생할 mp4 경로. 없으면 이미지만 표시
@@ -143,7 +143,7 @@ const AUTO_WORKS = Object.entries(window.MEDIA || {})
   .filter(([key]) => !listed.has(key))
   .map(([key, m]) => ({
     title: key.split("/").pop(),
-    // 카테고리 = 넣은 폴더 (Video / Image / Aesthetic)
+    // 카테고리 = 넣은 폴더 (Video / Image / Aesthetic / Design)
     type: key.split("/")[0].toLowerCase(),
     year: new Date().getFullYear(),
     folder: key,

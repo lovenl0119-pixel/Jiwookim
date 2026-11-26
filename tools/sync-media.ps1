@@ -6,7 +6,7 @@
                 ├─ thumb.png                  (선택) 아카이브·커버 썸네일(웹용 1600px로 변환). 없으면 영상 첫 장면
                 └─ Image/1.png, 2.png, 3.mp4… 상세 화면 오른쪽 패널 (숫자 오름차순, 영상도 가능)
 
-  [이미지 작품] ai work/Image/<작품명>/  또는  ai work/Aesthetic/<작품명>/ (형태 동일)
+  [이미지 작품] ai work/Image/<작품명>/  ·  ai work/Aesthetic/<작품명>/  ·  ai work/Design/<작품명>/ (형태 동일)
                 ├─ 이미지들 (파일명 오름차순)  왼쪽 큰 이미지 + 오른쪽 썸네일 목록
                 └─ thumb.png                  (선택) 아카이브 썸네일. 없으면 첫 번째 이미지
 
@@ -112,8 +112,8 @@ foreach ($dir in @(if (Test-Path $videoRoot) { Get-ChildItem $videoRoot -Directo
   "[영상] {0}: video={1}, thumb={2}, 패널={3}" -f $dir.Name, $(if ($video) { $video.Name } else { '-' }), $(if ($thumbSrc) { $thumbSrc.Name } else { '-' }), $gallery.Count
 }
 
-# ---------- 이미지 폼 작품: ai work/Image/<작품명>, ai work/Aesthetic/<작품명> ----------
-foreach ($cat in 'Image', 'Aesthetic') {
+# ---------- 이미지 폼 작품: ai work/Image · Aesthetic · Design/<작품명> ----------
+foreach ($cat in 'Image', 'Aesthetic', 'Design') {
   $imageRoot = Join-Path $work $cat
   if (-not (Test-Path $imageRoot)) { continue }
   foreach ($dir in Get-ChildItem $imageRoot -Directory | Sort-Object { Get-NaturalKey $_.Name }) {
