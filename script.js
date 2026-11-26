@@ -300,6 +300,8 @@
       const t = el?.closest?.(".work, .g-card") ? "View"
         : el?.closest?.(".zoom-layer.is-cover") ? (el.closest(".cover-close") ? "" : "Open")
         : el?.closest?.(".detail.is-image .viewer img") ? "Next"
+        : el?.closest?.(".detail:not(.is-image) .detail-gallery img") ? "View"
+        : el?.closest?.(".lightbox") && !el.closest("button") ? "Close"
         : "";
       const link = !t && !!el?.closest?.("a, button, [role='button'], .notice, label");
       cursor.classList.toggle("is-label", !!t);
@@ -487,7 +489,59 @@
 
   $("#detail-gallery").addEventListener("click", (e) => {
     const b = e.target.closest(".g-thumb");
-    if (b) showImage(Number(b.dataset.i));
+    if (b) return showImage(Number(b.dataset.i));
+    // 영상 폼: 옆 사진을 누르면 크게 보기
+    const im = e.target.closest("img");
+    if (im && !detail.classList.contains("is-image")) openLightbox(im);
+  });
+
+  /* ---------- 영상 폼: 사진 크게 보기 (←→ 이동, 클릭·Esc 닫기) ---------- */
+  const lb = document.createElement("div");
+  lb.className = "lightbox";
+  lb.hidden = true;
+  lb.setAttribute("role", "dialog");
+  lb.setAttribute("aria-label", "사진 크게 보기");
+  lb.innerHTML = `
+    <img class="lb-img" alt="" />
+    <button class="lb-close" type="button">Close ✕</button>
+    <button class="lb-arrow lb-prev" type="button" aria-label="이전 사진">←</button>
+    <button class="lb-arrow lb-next" type="button" aria-label="다음 사진">→</button>
+    <p class="lb-count" aria-live="polite"></p>`;
+  detail.append(lb);
+  let lbList = [], lbIndex = 0;
+  const lbOpen = () => !lb.hidden;
+
+  function lbShow(i, dir = 0) {
+    lbIndex = (i + lbList.length) % lbList.length;
+    const img = $(".lb-img", lb);
+    img.src = lbList[lbIndex].src;
+    img.alt = lbList[lbIndex].alt;
+    $(".lb-count", lb).textContent = `${String(lbIndex + 1).padStart(2, "0")} / ${String(lbList.length).padStart(2, "0")}`;
+    lb.classList.toggle("is-single", lbList.length < 2);
+    if (dir && !reduceMotion())
+      img.animate([{ opacity: 0, transform: `translateX(${24 * dir}px)` }, { opacity: 1, transform: "none" }], { duration: 360, easing: "cubic-bezier(0.22, 1, 0.36, 1)" });
+  }
+  function openLightbox(im) {
+    lbList = $$("#detail-gallery img");
+    lb.hidden = false;
+    lbShow(lbList.indexOf(im));
+    if (!reduceMotion()) {
+      lb.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 300, easing: "ease-out" });
+      $(".lb-img", lb).animate([{ transform: "scale(0.96)" }, { transform: "scale(1)" }], { duration: 500, easing: "cubic-bezier(0.22, 1, 0.36, 1)" });
+    }
+    lb.focus?.();
+  }
+  async function closeLightbox() {
+    if (!lbOpen()) return;
+    if (!reduceMotion()) await lb.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 220, easing: "ease-in" }).finished;
+    lb.hidden = true;
+    detail.focus({ preventScroll: true });
+  }
+  lb.tabIndex = -1;
+  lb.addEventListener("click", (e) => {
+    if (e.target.closest(".lb-prev")) return lbShow(lbIndex - 1, -1);
+    if (e.target.closest(".lb-next")) return lbShow(lbIndex + 1, 1);
+    closeLightbox(); // 사진·바탕·Close 어디든 누르면 닫힘
   });
   // 왼쪽 큰 이미지를 누르면 다음 이미지로
   $("#detail-media").addEventListener("click", (e) => {
@@ -623,9 +677,10 @@
     busy = false;
   }
 
-  detail.addEventListener("cancel", (e) => { e.preventDefault(); closeDetail(); }); // Esc
+  detail.addEventListener("cancel", (e) => { e.preventDefault(); lbOpen() ? closeLightbox() : closeDetail(); }); // Esc
 
   detail.addEventListener("close", () => {
+    lb.hidden = true;
     $("#detail-media").innerHTML = ""; // 영상 정지
     history.replaceState(null, "", location.pathname + location.search);
     const no = visible()[state.current]?.no;
@@ -645,6 +700,14 @@
     if (e.altKey || e.ctrlKey || e.metaKey || e.target.closest?.("video")) return; // 영상 탐색 키는 영상에 맡김
     const keys = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: "up", ArrowDown: "down" };
     if (!(e.key in keys)) return;
+
+    // 사진 크게 보기 중: ←→ 사진 이동
+    if (lbOpen()) {
+      e.preventDefault();
+      if (e.key === "ArrowLeft") lbShow(lbIndex - 1, -1);
+      if (e.key === "ArrowRight") lbShow(lbIndex + 1, 1);
+      return;
+    }
 
     // 이미지 폼: 방향키로 사진 이동 (←→ 한 장, ↑↓ 한 줄, 끝에서는 처음/마지막으로 순환)
     if (detail.classList.contains("is-image")) {
