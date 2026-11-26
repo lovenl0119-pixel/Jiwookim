@@ -452,7 +452,7 @@ html.has-cursor, html.has-cursor * { cursor: none !important; }
 .cursor.is-link .cursor-dot::before { scale: 0.5; }
 /* 라벨 상태: 반전 없이 진한 원 + 밝은 글씨 */
 .cursor.is-label .cursor-label {
-  width: 56px; height: 56px; font-size: 8.5px;
+  width: 40px; height: 40px; font-size: 7px; letter-spacing: 0.04em;
   background: var(--ink); border-color: var(--ink); color: var(--bg);
 }
 .cursor.is-label { mix-blend-mode: normal; }
@@ -672,7 +672,17 @@ dialog::backdrop { background: rgba(20, 20, 20, 0.35); }
 }
 .lightbox[hidden] { display: none; }
 .lightbox:focus { outline: none; }
-.lightbox .lb-img { max-width: 100%; max-height: calc(100vh - 112px); width: auto; height: auto; object-fit: contain; }
+.lightbox { overflow: hidden; }
+.lightbox .lb-img {
+  max-width: 100%; max-height: calc(100vh - 112px); width: auto; height: auto; object-fit: contain;
+  cursor: zoom-in; touch-action: none; user-select: none; -webkit-user-drag: none;
+  transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+  position: relative; z-index: 0;
+}
+.lightbox.is-zoomed .lb-img { cursor: grab; }
+.lightbox.is-dragging .lb-img { cursor: grabbing; transition: none; }
+.lightbox button, .lb-count { z-index: 1; }
+.lightbox.is-zoomed .lb-arrow, .lightbox.is-zoomed .lb-count { opacity: 0; pointer-events: none; }
 .lightbox button {
   position: absolute; border: 0; background: none; color: #f2f1ec; cursor: pointer;
   font: 400 12px/1 var(--mono); letter-spacing: 0.08em; text-transform: uppercase;

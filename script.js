@@ -301,6 +301,7 @@
         : el?.closest?.(".zoom-layer.is-cover") ? (el.closest(".cover-close") ? "" : "Open")
         : el?.closest?.(".detail.is-image .viewer img") ? "Next"
         : el?.closest?.(".detail:not(.is-image) .detail-gallery img") ? "View"
+        : el?.closest?.(".lb-img") ? (el.closest(".is-zoomed") ? "Drag" : "Zoom")
         : el?.closest?.(".lightbox") && !el.closest("button") ? "Close"
         : "";
       const link = !t && !!el?.closest?.("a, button, [role='button'], .notice, label");
@@ -511,8 +512,60 @@
   let lbList = [], lbIndex = 0;
   const lbOpen = () => !lb.hidden;
 
+  /* 사진 확대: 사진을 누르면 누른 곳을 중심으로 확대 → 누른 채 끌면 이동 → 다시 누르면 원래대로 */
+  const ZOOM = 2.5;
+  const lbImg = $(".lb-img", lb);
+  lbImg.draggable = false;
+  let zoomed = false, tx = 0, ty = 0, drag = null;
+  const clampPan = () => {
+    const mx = ((ZOOM - 1) * lbImg.offsetWidth) / 2, my = ((ZOOM - 1) * lbImg.offsetHeight) / 2;
+    tx = Math.max(-mx, Math.min(mx, tx));
+    ty = Math.max(-my, Math.min(my, ty));
+  };
+  const applyZoom = () => {
+    lbImg.style.transform = zoomed ? `translate(${tx}px, ${ty}px) scale(${ZOOM})` : "";
+    lb.classList.toggle("is-zoomed", zoomed);
+  };
+  function zoomAt(x, y) {
+    const r = lbImg.getBoundingClientRect(); // 확대 전 화면 위치
+    const px = x - (r.left + r.width / 2), py = y - (r.top + r.height / 2);
+    zoomed = true;
+    tx = -(ZOOM - 1) * px; ty = -(ZOOM - 1) * py; // 누른 지점이 그대로 마우스 아래 있도록
+    clampPan();
+    applyZoom();
+  }
+  function resetZoom() { zoomed = false; tx = ty = 0; drag = null; lb.classList.remove("is-dragging"); applyZoom(); }
+
+  lbImg.addEventListener("pointerdown", (e) => {
+    if (e.button !== 0) return;
+    e.preventDefault();
+    drag = { x: e.clientX, y: e.clientY, tx, ty, moved: false };
+    lbImg.setPointerCapture(e.pointerId);
+  });
+  lbImg.addEventListener("pointermove", (e) => {
+    if (!drag || !zoomed) return;
+    const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+    if (!drag.moved && Math.hypot(dx, dy) < 4) return;
+    drag.moved = true;
+    lb.classList.add("is-dragging"); // 끄는 동안은 즉시 따라오게
+    tx = drag.tx + dx; ty = drag.ty + dy;
+    clampPan();
+    applyZoom();
+  });
+  const endDrag = (e) => {
+    if (!drag) return;
+    const moved = drag.moved;
+    drag = null;
+    lb.classList.remove("is-dragging");
+    if (e.type === "pointercancel" || moved) return;
+    zoomed ? resetZoom() : zoomAt(e.clientX, e.clientY); // 끌지 않고 누르기만 했으면 확대/해제
+  };
+  lbImg.addEventListener("pointerup", endDrag);
+  lbImg.addEventListener("pointercancel", endDrag);
+
   function lbShow(i, dir = 0) {
     lbIndex = (i + lbList.length) % lbList.length;
+    resetZoom();
     const img = $(".lb-img", lb);
     img.src = lbList[lbIndex].src;
     img.alt = lbList[lbIndex].alt;
@@ -541,7 +594,8 @@
   lb.addEventListener("click", (e) => {
     if (e.target.closest(".lb-prev")) return lbShow(lbIndex - 1, -1);
     if (e.target.closest(".lb-next")) return lbShow(lbIndex + 1, 1);
-    closeLightbox(); // 사진·바탕·Close 어디든 누르면 닫힘
+    if (e.target === lbImg) return; // 사진은 확대/이동용 (위 pointer 처리)
+    closeLightbox(); // 바탕·Close를 누르면 닫힘
   });
   // 왼쪽 큰 이미지를 누르면 다음 이미지로
   $("#detail-media").addEventListener("click", (e) => {
