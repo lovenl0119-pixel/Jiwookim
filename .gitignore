@@ -1,0 +1,11 @@
+# 사이트와 관계없는 작업 도구 폴더
+.claude/
+.github/
+_previous/
+one
+
+# 테스트용 임시 파일
+zz-test*.html
+
+# GitHub 파일 크기 제한(100MB)을 넘는 원본 영상 — 사이트는 웹용(Cow_web.mp4)을 사용
+ai work/Video/Cow/Cow.mp4

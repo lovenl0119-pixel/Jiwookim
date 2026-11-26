@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="AI 사진 · 영상 · 디자인 작품 아카이브" />
+    <title>Imaginarium — AI Works Archive</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Instrument+Serif:ital@0;1&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css"
+    />
+    <link rel="stylesheet" href="styles.css?v=68" />
+  </head>
+  <body>
+    <!-- 첫 화면: 책상 위에 놓인 명함 — 아무 곳이나 클릭(또는 Enter)하면 명함이 왼쪽 위 모서리를 축으로 위로 돌아가며 입장 -->
+    <div class="notice" id="notice" role="dialog" aria-modal="true" aria-labelledby="notice-title" aria-describedby="notice-text" tabindex="0">
+      <div class="bcard">
+        <div class="bc-top">
+          <span class="bc-mark" aria-hidden="true">J/K</span>
+          <span class="bc-role">AI Photo — Video — Design</span>
+        </div>
+
+        <div class="bc-name">
+          <h1 class="notice-title" id="notice-title" aria-label="Jiwoo Kim Portfolio">
+            <span class="nt-word" data-split aria-hidden="true">Jiwoo</span>
+            <span class="nt-word nt-italic" data-split aria-hidden="true">Kim</span>
+          </h1>
+        </div>
+
+        <div class="bc-bottom">
+          <dl class="bc-contact">
+            <div><dt>E</dt><dd class="bc-mail">990day@naver.com</dd></div>
+            <div><dt>IG</dt><dd class="bc-ig">@n03ver</dd></div>
+          </dl>
+          <div class="bc-meta">
+            <span><i class="nt-dot" aria-hidden="true"></i>Seoul <span class="nt-clock">--:--</span></span>
+            <span>Portfolio ©2026</span>
+          </div>
+        </div>
+      </div>
+
+      <p class="notice-text" id="notice-text">
+        작업물들은 AI제작으로 이루어져 실제 인물이 아닙니다.<br />
+        또한 브랜드와 관련있는 작업들은 포트폴리오를 위해 제작되었음을 밝힙니다.
+      </p>
+    </div>
+
+    <a class="skip" href="#archive">본문으로 건너뛰기</a>
+
+    <header class="bar">
+      <p class="bar-count"><span id="count">0</span> WORKS ARCHIVED</p>
+
+      <nav class="views" aria-label="보기 방식">
+        <button type="button" data-view="grid" aria-pressed="true">Grid</button>
+        <button type="button" data-view="gallery" aria-pressed="false">Gallery</button>
+      </nav>
+
+      <button class="bar-about" type="button" id="about-open" aria-haspopup="dialog">About</button>
+    </header>
+
+    <div class="filters" role="group" aria-label="카테고리 필터">
+      <button type="button" data-filter="all" aria-pressed="true">All <sup></sup></button>
+      <button type="button" data-filter="video" aria-pressed="false">Video <sup></sup></button>
+      <button type="button" data-filter="image" aria-pressed="false">Image <sup></sup></button>
+      <button type="button" data-filter="aesthetic" aria-pressed="false">Aesthetic <sup></sup></button>
+    </div>
+
+    <main id="archive" class="archive" data-view="grid" aria-live="polite"></main>
+
+    <!-- Gallery 보기에서 마우스를 따라다니는 커서 (View / Drag) -->
+    <div class="cursor" aria-hidden="true">
+      <span class="cursor-ring"><span class="cursor-label"></span></span>
+      <span class="cursor-dot"></span>
+    </div>
+
+    <!-- 작품 상세 -->
+    <dialog class="detail" id="detail" aria-labelledby="detail-title" tabindex="-1">
+      <div class="detail-top">
+        <p class="detail-no" id="detail-no"></p>
+        <div class="detail-nav">
+          <button type="button" id="prev" aria-label="이전 작품">← Prev</button>
+          <button type="button" id="next" aria-label="다음 작품">Next →</button>
+          <button type="button" id="close" aria-label="닫기">Close ✕</button>
+        </div>
+      </div>
+      <div class="detail-body">
+        <figure class="detail-media" id="detail-media"></figure>
+        <aside class="detail-info">
+          <h2 id="detail-title"></h2>
+          <dl>
+            <div><dt>Category</dt><dd id="detail-type"></dd></div>
+            <div><dt>Year</dt><dd id="detail-year"></dd></div>
+            <div><dt>Tools</dt><dd id="detail-tools"></dd></div>
+          </dl>
+          <p class="detail-desc" id="detail-desc"></p>
+          <div class="detail-prompt" id="detail-prompt-wrap">
+            <p class="label">Prompt</p>
+            <p id="detail-prompt"></p>
+          </div>
+          <div class="detail-gallery" id="detail-gallery"></div>
+        </aside>
+      </div>
+    </dialog>
+
+    <!-- 소개 -->
+    <dialog class="about" id="about" aria-labelledby="about-title">
+      <button type="button" class="about-close" id="about-close" aria-label="닫기">Close ✕</button>
+      <h2 id="about-title"></h2>
+      <p class="about-role" id="about-role"></p>
+      <p class="about-bio" id="about-bio"></p>
+      <a class="about-mail" id="about-mail" href="#"></a>
+      <ul class="about-links" id="about-links"></ul>
+    </dialog>
+
+    <!-- 파일을 고친 뒤 화면에 반영이 안 되면 ?v= 숫자를 올리세요 (브라우저 캐시 방지) -->
+    <script src="media.js?v=68"></script>
+    <script src="works.js?v=68"></script>
+    <script src="script.js?v=68"></script>
+  </body>
+</html>
