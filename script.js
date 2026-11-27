@@ -441,11 +441,12 @@
   // 지금 보이는(또는 곧 보일) 사진 번호
   const currentImage = () =>
     pendingImage !== null ? pendingImage : swapping ? swapTarget : Number($("#detail-media").dataset.i) || 0;
-  async function showImage(i) {
+  let swipeDir = 0; // 스와이프로 넘길 때는 손가락 방향(좌우)으로 밀림
+  async function showImage(i, dir = 0) {
     const w = visible()[state.current];
     const media = $("#detail-media");
     if (!w) return;
-    if (swapping) { pendingImage = i; return; }
+    if (swapping) { pendingImage = i; swipeDir = dir; return; }
     if (String(i) === media.dataset.i) return;
     swapping = true;
     swapTarget = i;
@@ -454,8 +455,8 @@
 
     // 오른쪽 격자에서 지금 사진 기준으로 새 사진이 어느 방향(오른쪽·아래·대각선…)에 있는지
     const cols = galleryCols();
-    const dx = Math.sign((i % cols) - (from % cols));
-    const dy = Math.sign(Math.floor(i / cols) - Math.floor(from / cols));
+    const dx = dir || Math.sign((i % cols) - (from % cols));
+    const dy = dir ? 0 : Math.sign(Math.floor(i / cols) - Math.floor(from / cols));
 
     const oldSlide = $(".v-slide", viewer);
     const newSlide = document.createElement("div");
@@ -485,7 +486,7 @@
       Number(b.dataset.i) === i ? b.setAttribute("aria-current", "true") : b.removeAttribute("aria-current")
     );
     swapping = false;
-    if (pendingImage !== null) { const p = pendingImage; pendingImage = null; showImage(p); }
+    if (pendingImage !== null) { const p = pendingImage, d = swipeDir; pendingImage = null; swipeDir = 0; showImage(p, d); }
   }
 
   $("#detail-gallery").addEventListener("click", (e) => {
@@ -495,6 +496,29 @@
     const im = e.target.closest("img");
     if (im && !detail.classList.contains("is-image")) openLightbox(im);
   });
+
+  /* 모바일(터치): 이미지 폼 큰 사진을 좌우로 스와이프하면 이전/다음 사진 */
+  let justSwiped = false;
+  const SWIPE = 45; // 이만큼(px) 이상 옆으로 밀면 넘김
+  const isSwipe = (dx, dy) => Math.abs(dx) > SWIPE && Math.abs(dx) > Math.abs(dy) * 1.3;
+  let vTouch = null;
+  $("#detail-media").addEventListener("pointerdown", (e) => {
+    if (e.pointerType !== "touch" || !detail.classList.contains("is-image") || !e.target.closest(".viewer")) return;
+    vTouch = { x: e.clientX, y: e.clientY };
+  });
+  $("#detail-media").addEventListener("pointerup", (e) => {
+    if (!vTouch) return;
+    const dx = e.clientX - vTouch.x, dy = e.clientY - vTouch.y;
+    vTouch = null;
+    if (!isSwipe(dx, dy)) return;
+    const n = (visible()[state.current]?.gallery || []).length;
+    if (n < 2) return;
+    const d = dx < 0 ? 1 : -1; // 왼쪽으로 밀면 다음
+    justSwiped = true;
+    setTimeout(() => (justSwiped = false), 350);
+    showImage((currentImage() + d + n) % n, d);
+  });
+  $("#detail-media").addEventListener("pointercancel", () => (vTouch = null));
 
   /* ---------- 영상 폼: 사진 크게 보기 (←→ 이동, 클릭·Esc 닫기) ---------- */
   const lb = document.createElement("div");
@@ -555,9 +579,16 @@
   const endDrag = (e) => {
     if (!drag) return;
     const moved = drag.moved;
+    const sx = e.clientX - drag.x, sy = e.clientY - drag.y;
     drag = null;
     lb.classList.remove("is-dragging");
     if (e.type === "pointercancel" || moved) return;
+    // 모바일(터치): 확대 안 된 상태에서 좌우로 스와이프하면 이전/다음 사진
+    if (!zoomed && e.pointerType === "touch" && isSwipe(sx, sy)) {
+      if (lbList.length > 1) lbShow(lbIndex + (sx < 0 ? 1 : -1), sx < 0 ? 1 : -1);
+      return;
+    }
+    if (Math.hypot(sx, sy) > 10) return; // 살짝 끌다 만 건 누름으로 치지 않음
     zoomed ? resetZoom() : zoomAt(e.clientX, e.clientY); // 끌지 않고 누르기만 했으면 확대/해제
   };
   lbImg.addEventListener("pointerup", endDrag);
@@ -600,6 +631,7 @@
   // 왼쪽 큰 이미지를 누르면 다음 이미지로
   $("#detail-media").addEventListener("click", (e) => {
     if (!detail.classList.contains("is-image") || !e.target.closest(".viewer img")) return;
+    if (justSwiped) return;
     const w = visible()[state.current];
     showImage((Number($("#detail-media").dataset.i) + 1) % w.gallery.length);
   });
